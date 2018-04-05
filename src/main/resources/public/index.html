@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fix DataPump</title>
+    <script>
+        var restproto = window.location.protocol;
+        var host = window.location.host ;
+        var port = window.location.port ;
+        var hostandport = restproto+'//' + host ;
+
+        console.log("host and port:"+hostandport);
+        console.log("window loc:"+window.location);
+
+        var fxEvents = null;
+        function login() {
+            console.log("Inside security endpoint");
+            var user = document.getElementById('username').value;
+            var pswd = document.getElementById('password').value;
+            var url = hostandport +'/api/v1/fxdataserver/security/'+user+'/'+pswd;
+            console.log("calling login endpoint "+ url);
+
+            var res = fetch(
+                url,
+                {   method: 'GET',
+                    mode: 'no-cors',
+                    headers: new Headers(
+                        {"Content-Type": "application/json",
+                            "Accept":"application/json"}
+                    ),
+                    body: JSON.stringify(
+                        {'name': user, 'password': pswd}
+                    )
+                }
+        ).then(
+            console.log('inside then looking for response')
+//            response => { console.log(response);}
+        )
+        .catch(
+//            err => console.log(err)
+        );
+            console.log("Inside security endpoint");
+        }
+
+        function testEnd() {
+            fxEvents.close();
+            console.log("Inside testEnd - closing event source");
+        }
+
+        function timetest() {
+            var cdiv = document.getElementById('contentdiv');
+            cdiv.innerHTML = '<br>';
+            fxEvents = new EventSource('/api/v1/fx/timeing/');
+            console.log("Inside event listener setup");
+
+            fxEvents.addEventListener("message", function (event) {
+//            var fx = JSON.parse(event.data);
+                console.log("Inside event listener callback: " + event.data);
+                var textnode = document.createTextNode(event.data);
+                console.log("Inside event listener textnode : " + textnode);
+                cdiv.appendChild(textnode);
+                cdiv.appendChild(document.createElement('br'));
+            });
+
+            fxEvents.addEventListener('open', function (e) { }, false);
+
+            fxEvents.addEventListener('error', function (e) {
+                testEnd();
+            }, false);
+        }
+        function brokerlist() {
+            var bsel = document.getElementById('brokersel');
+            var locemitid = newEmitid();
+            console.log("Inside brokerlist: "+ locemitid);
+
+            fxEvents = new EventSource('/api/v1/fx/providers/'+ locemitid);
+            console.log("Inside brokerlist event listener setup");
+            var data = event.data;
+        //            var pdata = JSON.parse(event.data);
+
+            fxEvents.addEventListener("message", function (event) {
+                var brodivloc = document.createElement("option");
+                console.log("Inside symbollist event listener callback: " + event.data);
+                var pdata = JSON.parse(event.data);
+                brodivloc.innerText = pdata.symbol;
+                bsel.appendChild(brodivloc);
+            });
+        }
+
+        function symbollist() {
+            var ssel = document.getElementById('symsel');
+
+            fxEvents = new EventSource(hostandport +'/api/v1/fxdataserver/symbols/822');
+            console.log("Inside symbollist event listener setup");
+            var data = event.data;
+//            var pdata = JSON.parse(event.data);
+
+                fxEvents.addEventListener("message", function (event) {
+                    var symdivloc = document.createElement("option");
+                    console.log("Inside symbollist event listener callback: " + event.data);
+                    var pdata = JSON.parse(event.data);
+                    symdivloc.innerText = pdata.symbol;
+                    ssel.appendChild(symdivloc);
+                });
+            }
+        function brokerlist() {
+            var bsel = document.getElementById('brokersel');
+
+            fxEvents = new EventSource(hostandport + '/api/v1/fxdataserver/providers/822');
+            console.log("Inside brokerlist event listener setup");
+            var data = event.data;
+//            var pdata = JSON.parse(event.data);
+
+            fxEvents.addEventListener("message", function (event) {
+                var brokdivloc = document.createElement("option");
+                console.log("Inside brokerlist event listener callback: " + event.data);
+                var pdata = JSON.parse(event.data);
+                brokdivloc.innerText = pdata.symbol;
+                bsel.appendChild(brokdivloc);
+            });
+        }
+
+        function emittertest() {
+            fxEvents = new EventSource(hostandport +'/api/v1/fxdataserver/emitter/929324');
+            console.log("Inside emitter test");
+            var data = event.data;
+
+            fxEvents.addEventListener("message", function (event) {
+                console.log("Inside emitter test callback: " + event.data);
+            });
+        }
+
+        function authenticate() {
+            var secdiv = document.getElementById('secdiv');
+            console.log('calling security api/v1/fxdataserver/security/822');
+//            fxEvents = new EventSource('/api/v1/fxdataserver/security/822');
+            console.log("Inside security event listener setup");
+            var data = event.data;
+
+        }
+
+        function symbolfullamount() {
+            var cdiv = document.getElementById('contentdiv');
+            var symnamestr = document.getElementById('symname').value;
+            var volstr = document.getElementById('volume').value;
+            var lpstr = document.getElementById('lplist').value;
+
+            cdiv.innerHTML = '<br>';
+            var urlstr = hostandport + '/api/v1/fxdataserver/symbols-nosec/8009/' + symnamestr +'/' + lpstr+"/"+volstr+"/1" ;
+            // /v1/api/fx/symbols/43123434/AUDEUR/5/GS%2CJPMC%2CBAML/100000%2C200000%2C500000%2C10000000/0/'
+            console.log("Calling "+urlstr);
+            fxEvents = new EventSource(urlstr);
+            console.log("Inside event listener setup");
+
+            fxEvents.addEventListener("message", function (event) {
+                console.log("Inside event listener callback: " + event.data);
+                var div = document.createElement("div");
+                div.style.width = "100%";
+                div.style.border = "1";
+//                div.style.height = "100px";
+                div.style.background = "white";
+                div.style.color = "blue";
+
+                var quotetbl = document.createElement("table");
+                var tbdy = document.createElement('tbody');
+                quotetbl.appendChild(tbdy);
+                quotetbl.style.borderWidth = "thick";
+
+                var data = event.data;
+                var pdata = JSON.parse(event.data);
+                var quote = pdata.Quote;
+
+//                div.innerHTML = data;
+
+                for (var key in quote)
+                {
+                    var tr = document.createElement('tr')
+                    console.log("parsing json : " + JSON.stringify(quote[key]));
+                    var bid = quote[key].BID;
+                    var ask = quote[key].OFFER;
+                    console.log("parsing json bid: " + JSON.stringify(bid));
+                    console.log("parsing json ask: " + JSON.stringify(ask));
+
+                    if(bid){
+                        var bidtd = document.createElement('td');
+                        bidtd.innerHTML = "BID";
+                        tr.append(bidtd);
+                        var bidtd = document.createElement('td');
+                        bidtd.innerHTML=quote[key].BID.provider;
+                        tr.append(bidtd);
+                        var bidtd = document.createElement('td');
+                        bidtd.innerHTML=quote[key].BID.volume;
+                        tr.append(bidtd);
+                        var bidtd = document.createElement('td');
+                        bidtd.innerHTML=quote[key].BID.price;
+                        tr.append(bidtd);
+                        var bidtd = document.createElement('td');
+                        bidtd.innerHTML=quote[key].BID.mdorderid;
+                        tr.append(bidtd);
+                    }
+                    if(ask){
+                        var asktd = document.createElement('td');
+                        asktd.innerHTML="Offer";
+                        tr.append(asktd);
+                        var asktd = document.createElement('td');
+                        asktd.innerHTML=quote[key].OFFER.provider;
+                        tr.append(asktd);
+                        var asktd = document.createElement('td');
+                        asktd.innerHTML=quote[key].OFFER.volume;
+                        tr.append(asktd);
+                        var asktd = document.createElement('td');
+                        asktd.innerHTML=quote[key].OFFER.price;
+                        tr.append(asktd);
+                        var asktd = document.createElement('td');
+                        asktd.innerHTML=quote[key].OFFER.mdorderid;
+                        tr.append(asktd);
+                    }
+
+                    tbdy.appendChild(tr);
+                }
+
+                cdiv.innerHTML = '<br>';
+                div.appendChild(quotetbl);
+                cdiv.appendChild(div);
+
+            });
+
+            fxEvents.addEventListener('open', function (e) { }, false);
+
+            fxEvents.addEventListener('error', function (e) {
+                testEnd();
+            }, false);
+        }
+        </script>
+</head>
+<h1>Fix Datapump Restful Async stream service test....</h1><br>
+<div id='secdiv'>
+<input type="text" id="username" value="markm2" ></input><br>
+<input type="text" id="password" value="markm2" ></input><br>
+<button onclick="login();"/>Login</button><br>
+<input type="text" id="token" value="Authorization : Bearer" width="400"></input><br>
+<input type="text" id="cookie" value="Cookie: JSESSION" width="400"></input><br>
+</div>
+<input type="text" id="symname" value="AUDEUR"></input>
+<select id='symsel'></select><button onclick="symbollist();"/>SymbolList</button><br>
+<input type="text" id="volume" value="1000000,2000000,5000000,10000000"></input><br>
+<br><input type="text" id="lplist" value="GS,JPMC,BAML"></input><select id='brokersel'></select><button onclick="brokerlist();"/>BrokerList</button><br>
+<button onclick="symbolfullamount();"/>full amount</button>
+<button onclick="testEnd();"/>test end</button>
+<button onclick="emittertest();"/>test emitter</button>
+<div id='contentdiv'>
+
+</div>
+</body>
+</html>
